@@ -15,6 +15,18 @@ class Settings(BaseSettings):
     browser_user_agent: str = (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     )
+    
+    # 浏览器模式配置 - "local" 或 "remote"
+    browser_mode: str = "local"
+    
+    # 本地浏览器配置
+    local_browser_executable_path: str | None = None  # 自定义浏览器路径
+    local_browser_args: list[str] = []  # 额外启动参数
+    
+    # 远程浏览器配置 (如 Browserless, ScrapeOwl 等)
+    remote_browser_url: str | None = None  # 远程浏览器websocket URL
+    remote_browser_api_key: str | None = None  # API密钥
+    remote_browser_token: str | None = None  # 访问令牌
 
     # 抓取配置
     request_delay_min: float = 1.0  # 最小延迟(秒)
@@ -34,9 +46,10 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     log_format: str = "{time} | {level} | {name}:{function}:{line} - {message}"
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
+    model_config = {
+        "env_file": ".env",
+        "case_sensitive": False
+    }
 
 
 # 全局配置实例

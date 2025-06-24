@@ -36,6 +36,25 @@ class BookTag(BaseModel):
     count: int | None = Field(None, description="标签使用次数")
 
 
+class BookComment(BaseModel):
+    """图书短评模型"""
+    
+    user: str = Field(..., description="用户名")
+    time: str = Field(..., description="评论时间")
+    rating: int | None = Field(None, description="评分(1-5星)")
+    content: str = Field(..., description="评论内容")
+
+
+class BookReview(BaseModel):
+    """图书书评模型"""
+    
+    user: str = Field(..., description="评论者")
+    time: str = Field(..., description="评论时间")
+    title: str = Field(..., description="评论标题")
+    rating: int | None = Field(None, description="评分(1-5星)")
+    content: str = Field(..., description="评论详细内容")
+
+
 class Book(BaseModel):
     """豆瓣图书模型"""
 
@@ -61,10 +80,15 @@ class Book(BaseModel):
     summary: str | None = Field(None, description="内容简介")
     author_intro: str | None = Field(None, description="作者简介")
     catalog: str | None = Field(None, description="目录")
+    can_read_online: bool = Field(False, description="是否可在线阅读")
 
     # 评分和标签
     rating: BookRating | None = Field(None, description="评分信息")
     tags: list[BookTag] = Field(default_factory=list, description="标签列表")
+    
+    # 用户评论
+    short_comments: list[BookComment] = Field(default_factory=list, description="短评列表")
+    reviews: list[BookReview] = Field(default_factory=list, description="书评列表")
 
     # 其他信息
     url: str = Field(..., description="豆瓣链接")

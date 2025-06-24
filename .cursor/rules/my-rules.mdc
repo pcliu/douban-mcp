@@ -18,8 +18,8 @@ alwaysApply: true
 - **异步支持**: asyncio
 
 ### 关键依赖
-- `mcp`: MCP Python SDK
-- `browser-use`: 智能浏览器自动化
+- `mcp`: MCP Python SDK  参考文档：[mcp-python-sdk.txt](mdc:mcp-python-sdk.txt)
+- `browser-use`: 智能浏览器自动化 参考文档： [browser-use.txt](mdc:browser-use.txt)
 - `playwright`: 浏览器引擎
 - `pydantic`: 数据验证
 - `loguru`: 日志管理
@@ -38,7 +38,6 @@ douban-mcp/
 │   │   ├── __init__.py
 │   │   ├── book_scraper.py    # 豆瓣读书抓取
 │   │   ├── movie_scraper.py   # 豆瓣电影抓取
-│   │   └── music_scraper.py   # 豆瓣音乐抓取
 │   ├── scrapers/              # 爬虫核心逻辑
 │   │   ├── __init__.py
 │   │   ├── base.py            # 基础爬虫类
@@ -49,7 +48,6 @@ douban-mcp/
 │   │   ├── __init__.py
 │   │   ├── book.py
 │   │   ├── movie.py
-│   │   └── music.py
 │   ├── cache/                 # 缓存管理
 │   │   ├── __init__.py
 │   │   ├── sqlite_client.py   # SQLite客户端
