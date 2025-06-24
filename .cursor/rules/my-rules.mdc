@@ -1,0 +1,289 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 豆瓣内容抓取 MCP Server 开发规则
+
+## 项目概述
+开发一个基于 Model Context Protocol (MCP) 的豆瓣内容抓取服务器，使用 browser-use 和 playwright 技术栈，提供智能化的豆瓣数据抓取能力。
+
+## 核心技术栈
+
+### 后端框架
+- **语言**: Python 3.9+
+- **MCP框架**: mcp-python-sdk (fastmcp)
+- **内容抓取**: browser-use + playwright
+- **包管理**: uv (高性能Python包管理器)
+- **异步支持**: asyncio
+
+### 关键依赖
+- `mcp`: MCP Python SDK
+- `browser-use`: 智能浏览器自动化
+- `playwright`: 浏览器引擎
+- `pydantic`: 数据验证
+- `loguru`: 日志管理
+- `aiosqlite`: 异步SQLite客户端
+- `sqlalchemy`: 数据库ORM
+
+## 预期项目结构
+
+```
+douban-mcp/
+├── src/
+│   ├── __init__.py
+│   ├── server.py              # MCP服务器主入口
+│   ├── config.py              # 配置管理
+│   ├── tools/                 # MCP工具实现
+│   │   ├── __init__.py
+│   │   ├── book_scraper.py    # 豆瓣读书抓取
+│   │   ├── movie_scraper.py   # 豆瓣电影抓取
+│   │   └── music_scraper.py   # 豆瓣音乐抓取
+│   ├── scrapers/              # 爬虫核心逻辑
+│   │   ├── __init__.py
+│   │   ├── base.py            # 基础爬虫类
+│   │   ├── browser_manager.py # 浏览器管理
+│   │   ├── fixed_scripts.py   # 固定Playwright脚本
+│   │   └── ai_fallback.py     # browser-use AI降级
+│   ├── models/                # 数据模型
+│   │   ├── __init__.py
+│   │   ├── book.py
+│   │   ├── movie.py
+│   │   └── music.py
+│   ├── cache/                 # 缓存管理
+│   │   ├── __init__.py
+│   │   ├── sqlite_client.py   # SQLite客户端
+│   │   ├── models.py          # 缓存数据模型
+│   │   └── cache_manager.py   # 缓存策略管理
+│   └── utils/                 # 工具函数
+│       ├── __init__.py
+│       ├── validators.py      # 数据验证
+│       └── formatters.py      # 数据格式化
+├── tests/                     # 测试文件
+├── examples/                  # 使用示例
+├── docs/                      # 文档
+├── pyproject.toml             # 项目配置
+├── uv.lock                    # 依赖锁定
+├── .env.example               # 环境变量模板
+└── README.md
+```
+
+## 开发命令
+
+### 环境设置
+```bash
+# 切换到dev分支并安装依赖
+git checkout dev
+uv sync --dev
+
+# 确认虚拟环境状态
+uv run python -c "import sys; print('虚拟环境:', sys.executable)"
+
+# 安装浏览器引擎
+uv run playwright install chromium
+
+# 启动服务器
+uv run python -m src.server
+```
+
+### 虚拟环境管理
+```bash
+# 重新创建环境
+uv venv --recreate && uv sync --dev
+
+# 激活虚拟环境 (可选，uv会自动使用.venv)
+# Windows PowerShell/CMD
+.venv\Scripts\activate
+# Linux/Mac
+source .venv/bin/activate
+
+# 依赖管理 (确保在虚拟环境中操作)
+uv add package_name              # 添加依赖
+uv add --dev package_name        # 添加开发依赖
+uv remove package_name           # 移除依赖
+uv sync --upgrade                # 更新依赖
+
+# 查看依赖 (验证虚拟环境状态)
+uv pip list
+uv run python -c "import sys; print('当前Python:', sys.executable)"
+```
+
+### 代码质量
+```bash
+# 单独运行
+uv run black src/ tests/                    # 格式化
+uv run ruff check src/ tests/ --fix         # 代码检查
+uv run mypy src/                            # 类型检查
+uv run pytest                              # 运行测试
+
+# 一键检查
+uv run black src/ tests/ && uv run ruff check src/ tests/ --fix && uv run mypy src/ && uv run pytest
+```
+
+### Git工作流程
+```bash
+# 标准开发流程
+git checkout dev && git pull origin dev
+git checkout -b feature/your-feature-name
+# ... 开发代码 ...
+git add . && git commit -m "feat: 描述更改"
+git push origin feature/your-feature-name
+
+# 合并到dev分支
+git checkout dev && git merge feature/your-feature-name
+git push origin dev && git branch -d feature/your-feature-name
+```
+
+## 架构指导原则
+
+### MCP工具设计
+1. **单一职责**: 每个工具专注一个特定功能
+2. **参数验证**: 使用Pydantic模型验证输入参数
+3. **错误处理**: 优雅处理网络错误、反爬虫等异常
+4. **速率限制**: 实现请求间隔控制
+5. **缓存策略**: 合理使用缓存减少重复请求
+
+### 浏览器自动化最佳实践
+- 使用browser-use的Agent模式进行智能操作
+- 实现随机用户代理和请求头轮换
+- 支持代理池配置
+- 实现反检测措施（随机延迟、鼠标轨迹等）
+- 优雅处理验证码和登录状态
+
+### 缓存降级策略流程
+```
+                  ┌────────────┐
+请求(ISBN/ID) ───▶│ SQLite缓存  │───(命中)─▶ 返回
+                  └────────────┘
+                          │miss
+                          ▼
+                  ┌────────────────┐
+                  │ 固定 Playwright │───success──▶ 写缓存 + 返回
+                  │ 点击/解析脚本  │
+                  └────────────────┘
+                          │fail(选择器失效/验证码)
+                          ▼
+                  ┌────────────────┐
+                  │ browser-use AI │──▶ 取数 + 产新点击流
+                  └────────────────┘           │
+                          │                    ▼
+                          └───update SQLite(click流 & 元数据)
+```
+
+#### 缓存策略设计
+1. **L1缓存 (SQLite)**: 本地文件数据库，存储抓取结果和有效的点击流脚本
+2. **固定脚本**: 高性能的预定义Playwright操作序列
+3. **AI降级**: 当固定脚本失效时，使用browser-use智能适应
+4. **自适应更新**: AI成功后更新缓存中的点击流，提升后续性能
+5. **数据持久化**: SQLite文件可轻松备份、迁移和版本控制
+
+### 代码规范
+- 遵循 PEP 8 编码规范
+- 函数和类必须包含类型注解
+- 所有公共方法必须有docstring
+- 使用async/await处理异步操作
+
+## 开发工作流程
+
+### 功能开发步骤
+1. **需求分析**: 明确要抓取的豆瓣内容类型和字段
+2. **工具设计**: 设计MCP工具接口和参数结构
+3. **爬虫实现**: 使用browser-use实现智能抓取逻辑
+4. **数据建模**: 定义Pydantic数据模型
+5. **单元测试**: 编写测试用例验证功能
+6. **集成测试**: 测试与MCP客户端的集成
+
+### 每个功能完成后
+1. **运行完整测试套件**: `uv run black src/ tests/ && uv run ruff check src/ tests/ --fix && uv run mypy src/ && uv run pytest`
+2. **Git提交**: 在dev分支下提交，包含原始需求/提示
+3. **更新changelog**: 记录所有功能更新
+4. **推送到远程**: `git push origin dev`
+
+### Git提交规范
+```
+feat: 新功能
+fix: 修复bug
+docs: 文档更新
+style: 代码格式调整
+refactor: 代码重构
+test: 测试相关
+chore: 构建/工具相关
+
+示例: feat: 实现豆瓣电影详情抓取工具
+
+注意：所有开发工作都在dev分支进行
+```
+
+## 测试方法
+
+项目设置完成后，实施以下测试策略：
+
+### 测试层级
+- **单元测试**: 测试核心爬虫逻辑
+- **集成测试**: 测试MCP工具完整功能
+- **端到端测试**: 测试完整的抓取流程
+- **模拟测试**: 使用mock减少对真实网站的依赖
+
+### 错误处理测试
+- 网络超时和连接错误
+- 反爬虫检测和封IP
+- 页面结构变化
+- 数据格式异常
+
+## 重要提醒
+
+### 合规性
+- 遵守豆瓣robots.txt和使用条款
+- 实现合理的请求频率限制
+- 不要存储敏感用户信息
+
+### 性能优化
+- 实现请求去重
+- 支持并发抓取控制
+- 内存使用监控
+- 响应时间优化
+
+### 维护性
+- 定期更新反检测策略
+- 监控豆瓣页面结构变化
+- 提供降级和容错机制
+
+### 依赖管理
+- 使用 `uv` 进行包管理
+- 锁定依赖版本确保环境一致性
+- 定期更新安全补丁
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
