@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     browser_user_agent: str = (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     )
+    browser_load_images: bool = True  # 是否加载图片
+    browser_viewport_width: int = 1366  # 浏览器viewport宽度
+    browser_viewport_height: int = 768  # 浏览器viewport高度
+    browser_center_window: bool = True  # 是否将浏览器窗口居中
     
     # 浏览器模式配置 - "local" 或 "remote"
     browser_mode: str = "local"
